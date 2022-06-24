@@ -13,17 +13,11 @@ from stable_baselines3 import PPO
 
 from palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
+from callbacks import SaveOnBestTrainingRewardCallback
 
 
 if __name__ == "__main__":
-    train = True
-    env_params = EnvParams()
-    initial_config = InitialConfig()
-    if train:
-        sim_params = SumoParams(render=False, sim_step=1)
-    else:
-        sim_params = SumoParams(render=True, sim_step=1)
-
+    """ Setup flow parameters """
     net_params = NetParams(
         template={
             "net": os.path.join(os.getcwd(), "sumo_CA_car/sID_0.net.xml"),
@@ -33,6 +27,15 @@ if __name__ == "__main__":
     )
 
     new_vehicles = VehicleParams()
+
+    env_params = EnvParams()
+    initial_config = InitialConfig()
+
+    train = True
+    if train:
+        sim_params = SumoParams(render=False, sim_step=1)
+    else:
+        sim_params = SumoParams(render=True, sim_step=1)
 
     flow_params = dict(
         exp_tag='template',
@@ -48,15 +51,20 @@ if __name__ == "__main__":
 
     # number of time steps
     flow_params['env'].horizon = 100000000
-    # register as gym env
+    """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
-
     env = create_env()
+
+    """ Setup model """
     model = PPO("MlpPolicy", env, verbose=1)
 
     if train:
-        model.learn(total_timesteps=10000)
+        log_dir = "log/"
+        os.makedirs(log_dir, exist_ok=True)
+        # setup callback
+        callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
+        model.learn(total_timesteps=10000, callback=callback)
 
     # setup experiment
     exp = Experiment(flow_params)
