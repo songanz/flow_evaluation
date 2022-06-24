@@ -1,0 +1,22 @@
+# git info: zhilai/FCNet_tensorflow_to_pytorch | f08ef33f88159389afcfe8de3b171a74cfbb47e4
+#    - diff src/config/params_rl_experiments.py
+#    - diff src/config/params_ford_rb.py
+#    - diff src/config/params_ford_hpc.py
+#    - diff src/agents/rl_wrappers/fcnet_wrapper.py
+#    - diff src/agents/rl_wrappers/fcnet_torch_wrapper.py
+#    - diff src/agents/policy_iteration/policy_iteration_tactical_rl.py
+# SSM arguments: sumo_env rb tactical_rl mid policy_iteration rl_dep01_torch ros2 vis ford_rb
+ddqn_consts.q_net_namescope=ssm_qNet
+ddqn_consts.tar_net_namescope=ssm_tarNet
+learn.rl_backbone=FULLY_CONNECTED_TORCH
+saips_observation_space.num_of_side_lanes=2
+saips_observation_space.num_of_leaders=2
+saips_observation_space.num_of_followers=2
+saips_observation_space.traffic_veh_features=['speed_lon', 'speed_lat', 'cos_rel_angle', 'sin_rel_angle', 'dist_from_ego', 'acceleration', 'width', 'length', 'lat_dist_to_ego', 'lon_dist_to_ego', 'is_leader', 'emergency_brake_dist', 'is_valid']
+saips_observation_space.ego_veh_features=['speed_lon', 'speed_lat', 'cos_rel_angle', 'sin_rel_angle', 'dist_from_ego', 'acceleration', 'width', 'length', 'lat_dist', 'lon_dist_to_ego', 'is_leader', 'emergency_brake_dist', 'is_valid']
+saips_observation_space.lane_features=['allowed_speed', 'is_ending', 'mean_leaders', 'mean_followers', 'is_valid', 'density', 'lane_speed_to_ego', 'lane_speed_to_allowed_speed', 'lane_width']
+saips_observation_space.global_features=['fast_lane_direction', 'speed_advantage', 'number_lanes', 'avg_road_speed', 'num_lanes_to_fastest', 'dist_to_next_merge', 'dist_to_next_split', 'time_to_next_merge', 'time_to_next_split', 'merge_incentive', 'merge_penalty', 'merge_lane_depth', 'merge_direction_feat', 'right_lane_exp_mean_advantage', 'left_lane_exp_mean_advantage', 'near_collision']
+saips_observation_space.tl_features=[]
+saips_observation_space.prev_steps=0
+vanilla_ddqn.fc_layers=[400, 200, 100]
+vanilla_ddqn.activation_function=mish
