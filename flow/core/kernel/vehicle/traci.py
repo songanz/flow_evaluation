@@ -117,7 +117,6 @@ class TraCIVehicle(KernelVehicle):
                 self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed']
                 self.num_vehicles += 1
 
-
     def update(self, reset):
         """See parent class.
 

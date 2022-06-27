@@ -1,5 +1,6 @@
 import os
 from ray.tune.registry import register_env
+import time
 
 from flow.core.params import VehicleParams
 from flow.core.params import NetParams
@@ -13,7 +14,7 @@ from stable_baselines3 import PPO
 
 from palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
-from callbacks import SaveOnBestTrainingRewardCallback
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 
 if __name__ == "__main__":
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     )
 
     # number of time steps
-    flow_params['env'].horizon = 100000000
+    flow_params['env'].horizon = int(10e8)
     """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
@@ -60,11 +61,12 @@ if __name__ == "__main__":
     model = PPO("MlpPolicy", env, verbose=1)
 
     if train:
-        log_dir = "log/"
+        log_dir = os.path.join("./log/", time.strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(log_dir, exist_ok=True)
         # setup callback
-        callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
-        model.learn(total_timesteps=10000, callback=callback)
+        checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir,
+                                                 name_prefix='rl_model')
+        model.learn(total_timesteps=int(10e7), callback=checkpoint_callback)
 
     # setup experiment
     exp = Experiment(flow_params)

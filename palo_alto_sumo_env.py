@@ -120,7 +120,16 @@ class PaloAltoSumo(Env):
             if rl_agents_ids:
                 assert rl_agents_ids[0] == "Agent"
                 rl_id = rl_agents_ids[0]
-                crash = self.k.vehicle.get_crash(rl_id)
+                this_lane = self.k.vehicle.get_lane(rl_id)
+                lane_follower = self.k.vehicle.get_lane_followers(rl_id)[this_lane]
+                if lane_follower:
+                    lane_follower_acc = self.k.vehicle.get_realized_accel(lane_follower)
+                    if lane_follower_acc < -4:
+
+                        print(lane_follower, ' acc: ', lane_follower_acc)
+                else:
+                    lane_follower_acc = 0
+                crash = self.k.vehicle.get_crash(rl_id) or lane_follower_acc < -4
             else:
                 crash = False
 
@@ -216,6 +225,7 @@ class PaloAltoSumo(Env):
             r_lane_change = 0
         else:
             r_lane_change = -10
+        # if the following vehicle hard break
 
         """ Target Lanes Reward (mandatory) """
         len_target_lane = int(next_s[self.state_index_dict["len_target_lane"]])
@@ -226,6 +236,10 @@ class PaloAltoSumo(Env):
             else [num_lane - i - 1 for i in range(len_target_lane)]
         r_target_lane = 5 if this_lane in target_lane else -5
 
+        """ Arrive Bonus """
+        if 'Agent' in self.k.vehicle.get_arrived_ids():
+            return 100
+
         w_collision, w_ttc, w_time_headway, w_lc, w_eff = 0.2, 0.2, 0.2, 0.2, 0.2
         w_target_lane = np.exp(-dist_to_the_end_of_edge)
         r = (1 - w_target_lane) * (w_collision * r_collision +
@@ -235,9 +249,13 @@ class PaloAltoSumo(Env):
                                    w_eff * r_efficiency) + \
             w_target_lane * r_target_lane
 
+        print("r_col {0:6.2f}; r_ttc {1:6.2f}; r_th {2:6.2f}; r_eff {3:6.2f}; r_lc {4:6.2f}; r_tl {5:6.2f}; r {6:6.2f}".
+              format(r_collision, r_ttc, r_time_headway, r_efficiency, r_lane_change, r_target_lane, r))
+
         return r
 
     def reset(self):
+        self.sim_params.restart_instance = True
         super(PaloAltoSumo, self).reset()
         self.env_params.clip_actions = False  # todo some bugs to fix
         self.agent_route = self.k.network.rts["Agent"][0][0]

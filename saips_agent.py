@@ -71,7 +71,8 @@ class FCNetTorchPolicy(Module):
 
 # for debug
 if __name__ == '__main__':
-    pate_model = os.path.join(os.getcwd(), "saved_agents/baseline_2022_02_22_ctx_leaders_pytorch/agent_70/saved_model")
+    pate_model = os.path.join(os.getcwd(),
+                              "log/saved_agents/baseline_2022_02_22_ctx_leaders_pytorch/agent_70/saved_model")
     policy = FCNetTorchPolicy()
     policy.load_model_from_path(pate_model)
     print(policy.q_net)
