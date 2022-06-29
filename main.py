@@ -51,7 +51,7 @@ if __name__ == "__main__":
     )
 
     # number of time steps
-    flow_params['env'].horizon = int(10e8)
+    flow_params['env'].horizon = int(1e8)
     """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
@@ -66,7 +66,8 @@ if __name__ == "__main__":
         # setup callback
         checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir,
                                                  name_prefix='rl_model')
-        model.learn(total_timesteps=int(10e7), callback=checkpoint_callback)
+        # model.learn(total_timesteps=int(1e5), callback=checkpoint_callback)  # debug
+        model.learn(total_timesteps=int(1e7), callback=checkpoint_callback)
 
     # setup experiment
     exp = Experiment(flow_params)

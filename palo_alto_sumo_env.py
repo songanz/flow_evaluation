@@ -125,11 +125,28 @@ class PaloAltoSumo(Env):
                 if lane_follower:
                     lane_follower_acc = self.k.vehicle.get_realized_accel(lane_follower)
                     if lane_follower_acc < -4:
-
                         print(lane_follower, ' acc: ', lane_follower_acc)
                 else:
                     lane_follower_acc = 0
-                crash = self.k.vehicle.get_crash(rl_id) or lane_follower_acc < -4
+
+                lane_leaders = self.k.vehicle.get_lane_leaders(rl_id)
+                lane_leaders_speed = []
+                for i in lane_leaders:
+                    if i != '':
+                        lane_leaders_speed.append(self.k.vehicle.get_speed(i))
+                if lane_leaders_speed:
+                    lane_leaders_ave_speed = np.mean(np.array(lane_leaders_speed))
+                else:
+                    lane_leaders_ave_speed = self.k.vehicle.get_speed(rl_id)
+
+                if lane_leaders_ave_speed - self.k.vehicle.get_speed(rl_id) > 16:
+                    print("Agent too slow. avg speed: {0:6.2f}, agent speed: {1:6.2f}".format(
+                        lane_leaders_ave_speed, self.k.vehicle.get_speed(rl_id)
+                    ))
+
+                crash = (self.k.vehicle.get_crash(rl_id)) or \
+                        (lane_follower_acc < -4) or \
+                        (lane_leaders_ave_speed - self.k.vehicle.get_speed(rl_id) > 16)  # 35.791 mph
             else:
                 crash = False
 
@@ -203,28 +220,30 @@ class PaloAltoSumo(Env):
             return 0
 
         """ Collision Reward """
-        r_collision = -10 if fail else 0
+        if fail:
+            print("Failed, r_collision: -10")
+            return -10
 
         """ Safe: TTC and Time Headway """
         front_dist = next_s[self.state_index_dict["front_middle_headways"]]
         this_speed = next_s[self.state_index_dict["this_speed"]]
         leader_speed = next_s[self.state_index_dict["front_middle_speed"]]
-        ttc = front_dist/(this_speed-leader_speed)
-        time_headway = front_dist/this_speed if this_speed > 0 else 100
-        r_ttc = np.log(ttc/3) if 0 < ttc <= 3 else 0
-        r_time_headway = np.exp(-abs(1.75-time_headway)) if 0 < time_headway <= 5 else 0
+        ttc = front_dist / (this_speed - leader_speed)
+        time_headway = front_dist / this_speed if this_speed > 0 else 100
+        r_ttc = np.log(ttc / 3) if 0 < ttc <= 3 else 0
+        r_time_headway = np.exp(-abs((1.75 - time_headway)**2)/2) if time_headway > 0 else 0
 
         """ Efficiency """
         max_speed = next_s[self.state_index_dict["max_speed"]]
-        r_efficiency = np.exp(-abs(max_speed-this_speed)) if this_speed < max_speed else -5
+        r_efficiency = np.exp(-abs((max_speed - this_speed)**2)/30) if this_speed <= max_speed else -1
 
         """ Lane Change Reward """
         this_lane = next_s[self.state_index_dict["this_lane"]]
         num_lane = next_s[self.state_index_dict["num_lane"]]
-        if rl_actions is None or 0 <= this_lane + rl_actions[1] <= num_lane-1:
-            r_lane_change = 0
+        if rl_actions is None or 0 <= this_lane + rl_actions[1] <= num_lane - 1:
+            r_lane_change = 1
         else:
-            r_lane_change = -10
+            r_lane_change = -1
         # if the following vehicle hard break
 
         """ Target Lanes Reward (mandatory) """
@@ -234,23 +253,23 @@ class PaloAltoSumo(Env):
 
         target_lane = [i for i in range(len_target_lane)] if count_from_right_or_left \
             else [num_lane - i - 1 for i in range(len_target_lane)]
-        r_target_lane = 5 if this_lane in target_lane else -5
+        r_target_lane = 2 if this_lane in target_lane else -2
 
         """ Arrive Bonus """
         if 'Agent' in self.k.vehicle.get_arrived_ids():
+            print("Agent arrives, r_arrive: 100")
             return 100
 
-        w_collision, w_ttc, w_time_headway, w_lc, w_eff = 0.2, 0.2, 0.2, 0.2, 0.2
+        w_ttc, w_time_headway, w_lc, w_eff = 0.25, 0.25, 0.25, 0.25
         w_target_lane = np.exp(-dist_to_the_end_of_edge)
-        r = (1 - w_target_lane) * (w_collision * r_collision +
-                                   w_ttc * r_ttc +
+        r = (1 - w_target_lane) * (w_ttc * r_ttc +
                                    w_time_headway * r_time_headway +
                                    w_lc * r_lane_change +
                                    w_eff * r_efficiency) + \
             w_target_lane * r_target_lane
 
-        print("r_col {0:6.2f}; r_ttc {1:6.2f}; r_th {2:6.2f}; r_eff {3:6.2f}; r_lc {4:6.2f}; r_tl {5:6.2f}; r {6:6.2f}".
-              format(r_collision, r_ttc, r_time_headway, r_efficiency, r_lane_change, r_target_lane, r))
+        print("r_ttc {0:6.2f}; r_th {1:6.2f}; r_eff {2:6.2f}; r_lc {3:6.2f}; r_tl {4:6.2f}; r {5:6.2f}".
+              format(r_ttc, r_time_headway, r_efficiency, r_lane_change, r_target_lane, r))
 
         return r
 
@@ -307,13 +326,13 @@ class PaloAltoSumo(Env):
             headways = self.k.vehicle.get_lane_headways(rl_id)
             front_cars_state = [headways[this_lane], leaders_speed[this_lane]]
             # Front right
-            if this_lane-1 > 0 and leaders[this_lane-1]:
-                front_cars_state.extend([headways[this_lane-1], leaders_speed[this_lane-1]])
+            if this_lane - 1 > 0 and leaders[this_lane - 1]:
+                front_cars_state.extend([headways[this_lane - 1], leaders_speed[this_lane - 1]])
             else:
                 front_cars_state.extend([1000, -1001])
             # Front left
-            if this_lane+1 < num_lanes and leaders[this_lane+1]:
-                front_cars_state.extend([headways[this_lane+1], leaders_speed[this_lane+1]])
+            if this_lane + 1 < num_lanes and leaders[this_lane + 1]:
+                front_cars_state.extend([headways[this_lane + 1], leaders_speed[this_lane + 1]])
             else:
                 front_cars_state.extend([1000, -1001])
 
@@ -323,13 +342,13 @@ class PaloAltoSumo(Env):
             tailways = self.k.vehicle.get_lane_tailways(rl_id)
             rear_cars_state = [tailways[this_lane], followers_speed[this_lane]]
             # Rear right
-            if this_lane-1 > 0 and followers[this_lane-1]:
-                rear_cars_state.extend([tailways[this_lane-1], followers_speed[this_lane-1]])
+            if this_lane - 1 > 0 and followers[this_lane - 1]:
+                rear_cars_state.extend([tailways[this_lane - 1], followers_speed[this_lane - 1]])
             else:
                 rear_cars_state.extend([1000, -1001])
             # Rear left
-            if this_lane+1 < num_lanes and followers[this_lane+1]:
-                rear_cars_state.extend([tailways[this_lane+1], followers_speed[this_lane+1]])
+            if this_lane + 1 < num_lanes and followers[this_lane + 1]:
+                rear_cars_state.extend([tailways[this_lane + 1], followers_speed[this_lane + 1]])
             else:
                 rear_cars_state.extend([1000, -1001])
 

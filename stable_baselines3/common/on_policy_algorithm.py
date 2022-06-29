@@ -139,7 +139,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         :param callback: Callback that will be called at each step
             (and at the beginning and end of the rollout)
         :param rollout_buffer: Buffer to fill with rollouts
-        :param n_steps: Number of experiences to collect per environment
+        :param n_rollout_steps: Number of experiences to collect per environment
         :return: True if function returned with at least `n_rollout_steps`
             collected, False if callback terminated rollout prematurely.
         """
@@ -243,14 +243,22 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         iteration = 0
 
         total_timesteps, callback = self._setup_learn(
-            total_timesteps, eval_env, callback, eval_freq, n_eval_episodes, eval_log_path, reset_num_timesteps, tb_log_name
+            total_timesteps,
+            eval_env,
+            callback,
+            eval_freq,
+            n_eval_episodes,
+            eval_log_path,
+            reset_num_timesteps,
+            tb_log_name
         )
 
         callback.on_training_start(locals(), globals())
 
         while self.num_timesteps < total_timesteps:
 
-            continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+            continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer,
+                                                      n_rollout_steps=self.n_steps)
 
             if continue_training is False:
                 break
