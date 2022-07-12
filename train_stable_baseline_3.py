@@ -15,6 +15,7 @@ from stable_baselines3 import PPO
 from palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
 from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 
 
 if __name__ == "__main__":
@@ -29,14 +30,14 @@ if __name__ == "__main__":
 
     new_vehicles = VehicleParams()
 
-    env_params = EnvParams()
+    env_params = EnvParams(warmup_steps=15, clip_actions=False)
     initial_config = InitialConfig()
 
     train = True
     if train:
-        sim_params = SumoParams(render=False, sim_step=1)
+        sim_params = SumoParams(render=False, sim_step=1, restart_instance=True)
     else:
-        sim_params = SumoParams(render=True, sim_step=1)
+        sim_params = SumoParams(render=True, sim_step=1, restart_instance=True)
 
     flow_params = dict(
         exp_tag='template',
@@ -55,13 +56,15 @@ if __name__ == "__main__":
     """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
-    env = create_env()
+    # env = create_env()
+    env = DummyVecEnv([lambda: create_env()])
+    env = VecCheckNan(env, raise_exception=True)
 
     """ Setup model """
     model = PPO("MlpPolicy", env, verbose=1)
 
     if train:
-        log_dir = os.path.join("./log/", time.strftime('%Y-%m-%d_%H-%M-%S'))
+        log_dir = os.path.join("./log/stable_baseline_3/", time.strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(log_dir, exist_ok=True)
         # setup callback
         checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir,

@@ -2,11 +2,11 @@ import numpy as np
 import random
 from copy import deepcopy
 
-from flow.envs.base import Env
 from gym.spaces.box import Box
+from palo_alto_sumo_env import PaloAltoSumo
 
 
-class PaloAltoSumo(Env):
+class PaloAltoSumoAtt(PaloAltoSumo):
     """Palo Alto highway environment used to run simulations in the absence of autonomy.
 
     Required from env_params
@@ -37,31 +37,6 @@ class PaloAltoSumo(Env):
                  simulator='traci',
                  scenario=None):
         super().__init__(env_params, sim_params, network, simulator, scenario)
-        self.agent_route = None
-        # remember to change this if you change the get_state() function
-        self.state_index_dict = {
-            "this_lane": 0,
-            "this_speed": 1,
-            "max_speed": 2,
-            "num_lane": 3,
-            "len_target_lane": 4,
-            "count_from_right_or_left": 5,
-            "dist_to_the_end_of_edge": 6,
-            "front_middle_headways": 7,
-            "front_middle_speed": 8,
-            "front_right_headways": 9,
-            "front_right_speed": 10,
-            "front_left_headways": 11,
-            "front_left_speed": 12,
-            "rear_middle_headways": 13,
-            "rear_middle_speed": 14,
-            "rear_right_headways": 15,
-            "rear_right_speed": 16,
-            "rear_left_headways": 17,
-            "rear_left_speed": 18
-        }
-        self.HARDBRAKE = -6
-        self.SPEEDGAP = 16
 
     def step(self, rl_actions):
         crash = False
@@ -188,16 +163,6 @@ class PaloAltoSumo(Env):
 
         return next_observation, reward, done, infos
 
-    @property
-    def action_space(self):
-        """See parent class."""
-        return Box(low=-1, high=1, shape=(2,), dtype=np.float32)
-
-    @property
-    def observation_space(self):
-        """See parent class."""
-        return Box(low=-float("inf"), high=float("inf"), shape=(19,), dtype=np.float32)
-
     def apply_rl_actions(self, rl_actions=None):
         return self._apply_rl_actions(rl_actions)
 
@@ -212,14 +177,6 @@ class PaloAltoSumo(Env):
             self.k.vehicle.apply_lane_change(rl_id, self.lc_action_map(rl_actions[1]))
         else:
             return
-
-    @staticmethod
-    def lc_action_map(lc_action):
-        action_map = {(-1000, -0.5): -1, (-0.5, 0.5): 0, (0.5, 1000): 1}
-        # -1: change to the right; 1: change to the left; reference: apply_lane_change
-        for key in action_map:
-            if key[0] < lc_action <= key[1]:
-                return action_map[key]
 
     def compute_reward(self, rl_actions, fail=False, next_s=None, s=None):
         if not next_s.any():
@@ -373,7 +330,7 @@ class PaloAltoSumo(Env):
         if rl_agents_ids:
             assert rl_agents_ids[0] == "Agent"
             """ State of agent """
-            # [lane_index, v_x, lane_max_speed]
+            # [lane_number, v_x, lane_max_speed]
             rl_id = rl_agents_ids[0]
             this_edge = self.k.vehicle.get_edge(rl_id)
             this_lane = self.k.vehicle.get_lane(rl_id)
@@ -408,7 +365,7 @@ class PaloAltoSumo(Env):
             stay_merge_or_exit = [num_lanes, len(target_lane), count_from_right_or_left, dist_to_the_end_of_edge]
 
             """ Affordance cars """
-            # Front cars: headways and speed of [this, right, left]
+            # Front cars: [this, right, left]
             leaders = self.k.vehicle.get_lane_leaders(rl_id)  # in all lanes
             leaders_speed = self.k.vehicle.get_lane_leaders_speed(rl_id)
             headways = self.k.vehicle.get_lane_headways(rl_id)
@@ -424,7 +381,7 @@ class PaloAltoSumo(Env):
             else:
                 front_cars_state.extend([1000, -1001])
 
-            # Rear cars: headways and speed of [this, right, left]
+            # Rear cars: Front cars: [this, right, left]
             followers = self.k.vehicle.get_lane_followers(rl_id)  # in all lanes
             followers_speed = self.k.vehicle.get_lane_followers_speed(rl_id)
             tailways = self.k.vehicle.get_lane_tailways(rl_id)
