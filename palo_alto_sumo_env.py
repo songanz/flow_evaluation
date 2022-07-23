@@ -124,6 +124,10 @@ class PaloAltoSumo(Env):
             if rl_agents_ids:
                 assert rl_agents_ids[0] == "Agent"
                 rl_id = rl_agents_ids[0]
+                if self.k.vehicle.get_crash(rl_id):
+                    crash = True
+                    print('Agent crashed')
+                    break
                 this_lane = self.k.vehicle.get_lane(rl_id)
                 lane_follower = self.k.vehicle.get_lane_followers(rl_id)[this_lane]
                 if lane_follower:
@@ -199,6 +203,7 @@ class PaloAltoSumo(Env):
         return Box(low=-float("inf"), high=float("inf"), shape=(19,), dtype=np.float32)
 
     def apply_rl_actions(self, rl_actions=None):
+        # return None
         return self._apply_rl_actions(rl_actions)
 
     def _apply_rl_actions(self, rl_actions):

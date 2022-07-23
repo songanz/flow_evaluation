@@ -98,6 +98,9 @@ class TraCISimulation(KernelSimulation):
         else:
             self.time += self.sim_step
 
+        # kernel_api.gui
+        # kernel_api.simulation
+
         # Collect the additional data to store in the emission file.
         if self.emission_path is not None:
             kv = self.master_kernel.vehicle
@@ -225,6 +228,16 @@ class TraCISimulation(KernelSimulation):
                 # check collisions at intersections
                 sumo_call.append("--collision.check-junctions")
                 sumo_call.append("true")
+
+                # to enable collision for agents in SUMO, let it stay in the env for some time
+                sumo_call.append("--collision.stoptime")
+                sumo_call.append("2")
+
+                # for replay
+                # sumo_call.append("--save-state.period")
+                # sumo_call.append("1")
+                # sumo_call.append("--save-state.prefix")
+                # sumo_call.append("test")
 
                 logging.info(" Starting SUMO on port " + str(port))
                 logging.debug(" Cfg file: " + str(network.cfg))

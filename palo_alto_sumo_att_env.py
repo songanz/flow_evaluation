@@ -37,6 +37,17 @@ class PaloAltoSumoAtt(PaloAltoSumo):
                  simulator='traci',
                  scenario=None):
         super().__init__(env_params, sim_params, network, simulator, scenario)
+        self.ego_vehicle = None
+        self.ego_vehicle_id = "Agent"
+        self.agent_id = "Attacker"
+
+    @property
+    def observation_space(self):
+        """See parent class."""
+        return Box(low=-float("inf"), high=float("inf"), shape=(23,), dtype=np.float32)
+
+    def load_ego_vehicle(self, ego_veh_model_path, ego_veh_model):
+        self.ego_vehicle = ego_veh_model.load(ego_veh_model_path)
 
     def step(self, rl_actions):
         crash = False
@@ -99,6 +110,10 @@ class PaloAltoSumoAtt(PaloAltoSumo):
             if rl_agents_ids:
                 assert rl_agents_ids[0] == "Agent"
                 rl_id = rl_agents_ids[0]
+                if self.k.vehicle.get_crash(rl_id):
+                    crash = True
+                    print('Agent crash')
+                    break
                 this_lane = self.k.vehicle.get_lane(rl_id)
                 lane_follower = self.k.vehicle.get_lane_followers(rl_id)[this_lane]
                 if lane_follower:
@@ -171,10 +186,17 @@ class PaloAltoSumoAtt(PaloAltoSumo):
             return None
         rl_agents_ids = self.k.vehicle.get_rl_ids()
         if rl_agents_ids:
-            assert rl_agents_ids[0] == "Agent"
-            rl_id = rl_agents_ids[0]
-            self.k.vehicle.apply_acceleration(rl_id, rl_actions[0])
-            self.k.vehicle.apply_lane_change(rl_id, self.lc_action_map(rl_actions[1]))
+            for id_ in rl_agents_ids:
+                if id_ == "Attacker":
+                    self.k.vehicle.apply_acceleration(id_, rl_actions[0])
+                    self.k.vehicle.apply_lane_change(id_, self.lc_action_map(rl_actions[1]))
+                elif id_ == "Agent":
+                    ego_state = self.get_ego_state()
+                    actions = self.ego_vehicle.next_action(ego_state)
+                    self.k.vehicle.apply_acceleration(id_, actions[0])
+                    self.k.vehicle.apply_lane_change(id_, self.lc_action_map(actions[1]))
+                else:
+                    print("Unknow RL agent: ", id_)
         else:
             return
 
@@ -237,7 +259,6 @@ class PaloAltoSumoAtt(PaloAltoSumo):
         return r
 
     def reset(self):
-        self.agent_route = self.k.network.rts["Agent"][0][0]
         # reset the time counter
         self.time_counter = 0
 
@@ -252,7 +273,7 @@ class PaloAltoSumoAtt(PaloAltoSumo):
                 (self.step_counter > 2e6 and self.simulator != 'aimsun'):
             self.step_counter = 0
             # issue a random seed to induce randomness into the next rollout
-            self.sim_params.seed = random.randint(0, 1e5)
+            self.sim_params.seed = random.randint(0, int(1e5))
 
             self.k.vehicle = deepcopy(self.initial_vehicles)
             self.k.vehicle.master_kernel = self.k
@@ -315,7 +336,9 @@ class PaloAltoSumoAtt(PaloAltoSumo):
         # perform (optional) warm-up steps before training
         for _ in range(self.env_params.warmup_steps):
             observation, _, _, _ = self.step(rl_actions=None)
-        while not self.k.vehicle.get_rl_ids():
+        while self.k.vehicle.get_rl_ids() \
+                or "Agent" not in self.k.vehicle.get_rl_ids() \
+                or "Attacker" not in self.k.vehicle.get_rl_ids():
             observation, _, _, _ = self.step(rl_actions=None)
         print("Observation 0 after warm-up", observation[0])
 
@@ -325,82 +348,98 @@ class PaloAltoSumoAtt(PaloAltoSumo):
         return observation
 
     def get_state(self, **kwargs):
-        """See class definition."""
         rl_agents_ids = self.k.vehicle.get_rl_ids()
-        if rl_agents_ids:
-            assert rl_agents_ids[0] == "Agent"
-            """ State of agent """
-            # [lane_number, v_x, lane_max_speed]
-            rl_id = rl_agents_ids[0]
-            this_edge = self.k.vehicle.get_edge(rl_id)
-            this_lane = self.k.vehicle.get_lane(rl_id)
-
-            this_speed = self.k.vehicle.get_speed(rl_id)
-            max_speed = self.k.network.speed_limit(this_edge)
-            this_car_state = [this_lane, this_speed, max_speed]
-
-            """ Target lane & target dist """
-            # [num_lanes, len(target_lane), count_from_left_or_right, dist_to_the_end_of_edge]
-            num_lanes = self.k.network.num_lanes(this_edge)  # get num of lanes at current edge
-            # Fixed: something wrong with loading the net xml, sometime it gets larger num_lanes!
-            target_lane = []
-            for lane in range(num_lanes):
-                junctions = self.k.network.next_edge(this_edge, lane)
-                if not junctions:
-                    # print("No next junction to edge: ", this_edge, " at lane: ", lane)
-                    pass
-                for junction in junctions:
-                    try:
-                        for next_edge, _ in self.k.network.next_edge(junction[0], junction[1]):
-                            if next_edge in self.agent_route and lane not in target_lane:
-                                target_lane.append(lane)
-                    except IndexError:
-                        continue
-            if 0 in target_lane:  # right
-                count_from_right_or_left = 1  # count from right
-            else:
-                count_from_right_or_left = 0  # count from left
-            dist_to_the_end_of_edge = self.k.network.edge_length(this_edge) - self.k.vehicle.get_position(rl_id)
-            assert len(target_lane) <= num_lanes
-            stay_merge_or_exit = [num_lanes, len(target_lane), count_from_right_or_left, dist_to_the_end_of_edge]
-
-            """ Affordance cars """
-            # Front cars: [this, right, left]
-            leaders = self.k.vehicle.get_lane_leaders(rl_id)  # in all lanes
-            leaders_speed = self.k.vehicle.get_lane_leaders_speed(rl_id)
-            headways = self.k.vehicle.get_lane_headways(rl_id)
-            front_cars_state = [headways[this_lane], leaders_speed[this_lane]]
-            # Front right
-            if this_lane - 1 > 0 and leaders[this_lane - 1]:
-                front_cars_state.extend([headways[this_lane - 1], leaders_speed[this_lane - 1]])
-            else:
-                front_cars_state.extend([1000, -1001])
-            # Front left
-            if this_lane + 1 < num_lanes and leaders[this_lane + 1]:
-                front_cars_state.extend([headways[this_lane + 1], leaders_speed[this_lane + 1]])
-            else:
-                front_cars_state.extend([1000, -1001])
-
-            # Rear cars: Front cars: [this, right, left]
-            followers = self.k.vehicle.get_lane_followers(rl_id)  # in all lanes
-            followers_speed = self.k.vehicle.get_lane_followers_speed(rl_id)
-            tailways = self.k.vehicle.get_lane_tailways(rl_id)
-            rear_cars_state = [tailways[this_lane], followers_speed[this_lane]]
-            # Rear right
-            if this_lane - 1 > 0 and followers[this_lane - 1]:
-                rear_cars_state.extend([tailways[this_lane - 1], followers_speed[this_lane - 1]])
-            else:
-                rear_cars_state.extend([1000, -1001])
-            # Rear left
-            if this_lane + 1 < num_lanes and followers[this_lane + 1]:
-                rear_cars_state.extend([tailways[this_lane + 1], followers_speed[this_lane + 1]])
-            else:
-                rear_cars_state.extend([1000, -1001])
-
-            """ State """
-            state = this_car_state + stay_merge_or_exit + front_cars_state + rear_cars_state
-            state = np.array(state, dtype=np.float32)
+        if rl_agents_ids and "Attacker" in rl_agents_ids:
+            attacker_state = self._get_state_by_id("Attacker")  # list
+            """ ego vehicle position, speed and action"""
+            ego_speed = self.k.vehicle.get_speed("Agent")
+            rel_x = self.k.vehicle.get_2d_position("Attacker")[0] - self.k.vehicle.get_2d_position("Agent")[0]
+            rel_y = self.k.vehicle.get_2d_position("Attacker")[1] - self.k.vehicle.get_2d_position("Agent")[1]
+            actions = self.ego_vehicle.next_action(self.get_ego_state())
+            state = [ego_speed, rel_x, rel_y] + actions + attacker_state
             return state
         else:
-            print("Agent not joined yet")
             return None
+
+    def get_ego_state(self, **kwargs):
+        """See class definition."""
+        rl_agents_ids = self.k.vehicle.get_rl_ids()
+        if rl_agents_ids and "Agent" in rl_agents_ids:
+            return np.array(self._get_state_by_id("Agent"), dtype=np.float32)
+        else:
+            print("Ego vehicle has not joined yet")
+            return None
+
+    def _get_state_by_id(self, v_id):
+        """ Get state by id """
+        v_route = self.k.network.rts[v_id][0][0]
+        """ State of this vehicle """
+        # [lane_number, v_x, lane_max_speed]
+        this_edge = self.k.vehicle.get_edge(v_id)
+        this_lane = self.k.vehicle.get_lane(v_id)
+
+        this_speed = self.k.vehicle.get_speed(v_id)
+        max_speed = self.k.network.speed_limit(this_edge)
+        this_car_state = [this_lane, this_speed, max_speed]
+
+        """ Target lane & target dist """
+        # [num_lanes, len(target_lane), count_from_left_or_right, dist_to_the_end_of_edge]
+        num_lanes = self.k.network.num_lanes(this_edge)  # get num of lanes at current edge
+        # Fixed: something wrong with loading the net xml, sometime it gets larger num_lanes!
+        target_lane = []
+        for lane in range(num_lanes):
+            junctions = self.k.network.next_edge(this_edge, lane)
+            if not junctions:
+                # print("No next junction to edge: ", this_edge, " at lane: ", lane)
+                pass
+            for junction in junctions:
+                try:
+                    for next_edge, _ in self.k.network.next_edge(junction[0], junction[1]):
+                        if next_edge in v_route and lane not in target_lane:
+                            target_lane.append(lane)
+                except IndexError:
+                    continue
+        if 0 in target_lane:  # right
+            count_from_right_or_left = 1  # count from right
+        else:
+            count_from_right_or_left = 0  # count from left
+        dist_to_the_end_of_edge = self.k.network.edge_length(this_edge) - self.k.vehicle.get_position(v_id)
+        assert len(target_lane) <= num_lanes
+        stay_merge_or_exit = [num_lanes, len(target_lane), count_from_right_or_left, dist_to_the_end_of_edge]
+
+        """ Affordance cars """
+        # Front cars: [this, right, left]
+        leaders = self.k.vehicle.get_lane_leaders(v_id)  # in all lanes
+        leaders_speed = self.k.vehicle.get_lane_leaders_speed(v_id)
+        headways = self.k.vehicle.get_lane_headways(v_id)
+        front_cars_state = [headways[this_lane], leaders_speed[this_lane]]
+        # Front right
+        if this_lane - 1 > 0 and leaders[this_lane - 1]:
+            front_cars_state.extend([headways[this_lane - 1], leaders_speed[this_lane - 1]])
+        else:
+            front_cars_state.extend([1000, -1001])
+        # Front left
+        if this_lane + 1 < num_lanes and leaders[this_lane + 1]:
+            front_cars_state.extend([headways[this_lane + 1], leaders_speed[this_lane + 1]])
+        else:
+            front_cars_state.extend([1000, -1001])
+
+        # Rear cars: Front cars: [this, right, left]
+        followers = self.k.vehicle.get_lane_followers(v_id)  # in all lanes
+        followers_speed = self.k.vehicle.get_lane_followers_speed(v_id)
+        tailways = self.k.vehicle.get_lane_tailways(v_id)
+        rear_cars_state = [tailways[this_lane], followers_speed[this_lane]]
+        # Rear right
+        if this_lane - 1 > 0 and followers[this_lane - 1]:
+            rear_cars_state.extend([tailways[this_lane - 1], followers_speed[this_lane - 1]])
+        else:
+            rear_cars_state.extend([1000, -1001])
+        # Rear left
+        if this_lane + 1 < num_lanes and followers[this_lane + 1]:
+            rear_cars_state.extend([tailways[this_lane + 1], followers_speed[this_lane + 1]])
+        else:
+            rear_cars_state.extend([1000, -1001])
+
+        """ State """
+        state = this_car_state + stay_merge_or_exit + front_cars_state + rear_cars_state
+        return state

@@ -363,11 +363,11 @@ class Network(object):
 
                 # add the vehicle types to the VehicleParams object
                 for t in vtypes:
-                    if t == 'Agent':
+                    if t == 'Agent' or t == 'Attacker':
                         # if you build a controller for both car following and lane change, set it here
                         # if you want to keep the agent in the network, set `routing_controller=(ContinuousRouter, {})`
                         vehicles.add(veh_id=t, acceleration_controller=(RLController, {}),
-                                     lane_change_params=lc[t],
+                                     lane_change_params=lc[t], car_following_params=cf[t],
                                      num_vehicles=0, color=colors[t])
                     else:
                         vehicles.add(veh_id=t, car_following_params=cf[t],
@@ -795,17 +795,30 @@ class Network(object):
         ret = {}
         for typ in vtypes:
             # TODO: add vClass
-            ret[typ] = SumoCarFollowingParams(
-                speed_mode='all_checks',
-                accel=float(vtypes[typ]['accel']),
-                decel=float(vtypes[typ]['decel']),
-                sigma=float(vtypes[typ]['sigma']),
-                length=float(vtypes[typ]['length']),
-                min_gap=float(vtypes[typ]['minGap']),
-                max_speed=float(vtypes[typ]['maxSpeed']),
-                probability=float(vtypes[typ]['probability']),
-                speed_dev=float(vtypes[typ]['speedDev'])
-            )
+            if typ == 'Agent' or typ == 'Attacker':
+                ret[typ] = SumoCarFollowingParams(
+                    speed_mode='aggressive',
+                    accel=float(vtypes[typ]['accel']),
+                    decel=float(vtypes[typ]['decel']),
+                    sigma=float(vtypes[typ]['sigma']),
+                    length=float(vtypes[typ]['length']),
+                    min_gap=float(vtypes[typ]['minGap']),
+                    max_speed=float(vtypes[typ]['maxSpeed']),
+                    probability=float(vtypes[typ]['probability']),
+                    speed_dev=float(vtypes[typ]['speedDev'])
+                )
+            else:
+                ret[typ] = SumoCarFollowingParams(
+                    speed_mode='all_checks',
+                    accel=float(vtypes[typ]['accel']),
+                    decel=float(vtypes[typ]['decel']),
+                    sigma=float(vtypes[typ]['sigma']),
+                    length=float(vtypes[typ]['length']),
+                    min_gap=float(vtypes[typ]['minGap']),
+                    max_speed=float(vtypes[typ]['maxSpeed']),
+                    probability=float(vtypes[typ]['probability']),
+                    speed_dev=float(vtypes[typ]['speedDev'])
+                )
 
         return ret
 
@@ -813,8 +826,12 @@ class Network(object):
     def _get_lc_params(vtypes):
         """Return the lane change sumo params from vtypes."""
         ret = {}
+        # TODO: add vClass
         for typ in vtypes:
-            ret[typ] = SumoLaneChangeParams(lane_change_mode=1621)
+            if typ == 'Agent' or typ == 'Attacker':
+                ret[typ] = SumoLaneChangeParams(lane_change_mode='no_lc_aggressive')
+            else:
+                ret[typ] = SumoLaneChangeParams(lane_change_mode='sumo_default')
 
         return ret
     

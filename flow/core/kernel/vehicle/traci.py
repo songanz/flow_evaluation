@@ -352,12 +352,12 @@ class TraCIVehicle(KernelVehicle):
         self.__vehicles[veh_id]["initial_speed"] = \
             self.type_parameters[veh_type]["initial_speed"]
 
-        # set the speed mode for the vehicle
+        # set the speed mode for the vehicle, for safety_constraints
         speed_mode = self.type_parameters[veh_type][
             "car_following_params"].speed_mode
         self.kernel_api.vehicle.setSpeedMode(veh_id, speed_mode)
 
-        # set the lane changing mode for the vehicle
+        # set the lane changing mode for the vehicle, for safety_constraints
         lc_mode = self.type_parameters[veh_type][
             "lane_change_params"].lane_change_mode
         self.kernel_api.vehicle.setLaneChangeMode(veh_id, lc_mode)
@@ -1028,8 +1028,7 @@ class TraCIVehicle(KernelVehicle):
             self.get_edge(veh_id), self.get_position(veh_id))
 
     def get_crash(self, veh_id):
-        # occurs when a vehicle crashes is teleported for some other reason
-        if self.get_edge(veh_id) == '':
+        if veh_id in self.kernel_api.simulation.getCollidingVehiclesIDList():
             return True
         else:
             return False
