@@ -272,7 +272,7 @@ class PaloAltoSumo(Env):
             return 100
 
         w_ttc, w_time_headway, w_lc, w_eff = 0.25, 0.25, 0.25, 0.25
-        w_target_lane = np.exp(-dist_to_the_end_of_edge)
+        w_target_lane = np.exp(-dist_to_the_end_of_edge/10)
         r = (1 - w_target_lane) * (w_ttc * r_ttc +
                                    w_time_headway * r_time_headway +
                                    w_lc * r_lane_change +

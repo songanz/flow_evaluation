@@ -10,12 +10,13 @@ from flow.core.params import SumoParams
 from flow.networks import Network
 from flow.utils.registry import make_create_env
 
-from stable_baselines3 import *
+import stable_baselines3
 
 from palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList, EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
+from stable_baselines3.common.logger import configure
 
 
 if __name__ == "__main__":
@@ -33,17 +34,7 @@ if __name__ == "__main__":
     env_params = EnvParams(warmup_steps=15, clip_actions=False)
     initial_config = InitialConfig()
 
-    base_folder = "./log/stable_baseline_3/"
-    log_dir = os.path.join(base_folder, time.strftime('%Y-%m-%d_%H-%M-%S'))
-    emission_path = os.path.join(log_dir, "animation/")
-    os.makedirs(emission_path, exist_ok=True)
-
-    train = True
-    if train:
-        sim_params = SumoParams(render=False, no_step_log=False, emission_path=emission_path,
-                                sim_step=1, restart_instance=True)
-    else:
-        sim_params = SumoParams(render=True, no_step_log=True, sim_step=1, restart_instance=True)
+    sim_params = SumoParams(render=False, no_step_log=False, sim_step=1, restart_instance=True)
 
     flow_params = dict(
         exp_tag='template',
@@ -67,22 +58,27 @@ if __name__ == "__main__":
     env = VecCheckNan(env, raise_exception=True)
 
     """ Setup model """
-    model = PPO("MlpPolicy", env, verbose=1)
+    algo_name = "SAC"
+    model_ = getattr(stable_baselines3, algo_name)
+    model = model_("MlpPolicy", env, verbose=1)
 
-    if train:
-        # setup callback
-        checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir,
-                                                 name_prefix='rl_model')
-        # model.learn(total_timesteps=int(1e5), callback=checkpoint_callback)  # debug
-        model.learn(total_timesteps=int(1e7), callback=checkpoint_callback)
+    base_folder = os.path.join("./log/stable_baseline_3/", algo_name)
+    log_dir = os.path.join(base_folder, time.strftime('%Y-%m-%d_%H-%M-%S'))
+    model_path = os.path.join(log_dir, 'model/')
+    os.makedirs(model_path, exist_ok=True)
+    eval_path = os.path.join(log_dir, 'eval/')
+    os.makedirs(eval_path, exist_ok=True)
 
-    # setup experiment
-    exp = Experiment(flow_params)
+    logger = configure(eval_path, ['stdout', 'csv', 'tensorboard'])
+    model.set_logger(logger)
 
-    # setup rl policy
-    rl_actions = model.next_action
+    # setup callback
+    checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=model_path,
+                                             name_prefix='rl_model')
+    eval_callback = EvalCallback(env, best_model_save_path=model_path, log_path=eval_path,
+                                 n_eval_episodes=5, eval_freq=50)
+    callback = CallbackList([checkpoint_callback, eval_callback])
 
-    # run the sumo simulation
-    info_dict = exp.run(1, rl_actions=rl_actions)
-    print(info_dict)
+    # Start training
+    model.learn(total_timesteps=int(1e7), callback=callback)
 
