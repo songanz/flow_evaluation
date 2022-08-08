@@ -15,16 +15,16 @@ from flow.utils.registry import make_create_env
 import stable_baselines3
 
 from sumo_env.palo_alto_sumo_env import PaloAltoSumo
-from evaluation import Experiment
+from utils.evaluation import Experiment
 
 
 if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/fringe100.rou.xml")
         }
     )
 

@@ -5,6 +5,8 @@ import sys
 stable_baselines3_path = os.path.join(os.getcwd(), "stable-baselines3")
 sys.path.append(stable_baselines3_path)
 
+import argparse
+
 from flow.core.params import VehicleParams
 from flow.core.params import NetParams
 from flow.core.params import InitialConfig
@@ -25,9 +27,9 @@ if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env/config/palo_alto_small/fringe100.rou.xml")
         }
     )
 
