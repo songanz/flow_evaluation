@@ -14,7 +14,7 @@ from flow.utils.registry import make_create_env
 
 import stable_baselines3
 
-from palo_alto_sumo_env import PaloAltoSumo
+from sumo_env.palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
 
 

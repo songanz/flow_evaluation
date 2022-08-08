@@ -15,8 +15,7 @@ from flow.utils.registry import make_create_env
 
 import stable_baselines3
 
-from palo_alto_sumo_env import PaloAltoSumo
-from evaluation import Experiment
+from sumo_env.palo_alto_sumo_env import PaloAltoSumo
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList, EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 from stable_baselines3.common.logger import configure
@@ -26,9 +25,9 @@ if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/fringe100.rou.xml")
         }
     )
 

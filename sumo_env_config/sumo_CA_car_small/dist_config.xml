@@ -1,0 +1,15 @@
+<routes>
+    <!--ego-->
+    <vType id="Agent" color="1,0,0" accel="3" actionStepLength="0.1" decel="4.5" emergencyDecel="9" guiShape="passenger/sedan" latAlignment="left" length="5.0" maxSpeed="35.76" maxSpeedLat="1.9219" minGap="1.1868" minGapLat="0.4401" sigma="0.0" speedFactor="0.8305" speedDev="0.1" tau="3.0699" width="1.79" />
+    <!--myu types-->
+    <vType id="type1" color="0.5,0.5,0" accel="0.01" decel="0.01" sigma="0" length="5" width="2" maxSpeed="0.1" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="type2" color="0.5,0.5,0" accel="0.01" decel="0.01" sigma="0" length="5" width="2" maxSpeed="0.1" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="type3" color="0.5,0.5,0" accel="3" decel="4.5" sigma="0.5" length="5" width="2" maxSpeed="50" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="type4" color="0.5,0.5,0" accel="3" decel="4.5" sigma="0.5" length="5" width="2" maxSpeed="50" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="type5" color="0.5,0.5,0" accel="0.01" decel="4.5" sigma="0.5" length="5" width="2" maxSpeed="0.1" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="type6" color="0.5,0.5,0" accel="0.01" decel="0.01" sigma="0" length="5" width="2" maxSpeed="0.1" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <!--my types-->
+    <vType id="veh_passenger" color="0.5,0.5,0" accel="3" decel="4.5" sigma="0.5" length="5" width="2" maxSpeed="50" minGap="1.5" probability=".40" speedDev="0.1" guiShape="passenger/sedan"/>
+    <vType id="dumb1" accel="3" decel="4.5" sigma="0.5" minGap="1.5" length="5" width="2" maxSpeed="30" speedDev="0.1" guiShape="passenger/sedan" carFollowModel="IDMM" color="0.8,0.8,0.8"/>
+    <vType id="dumb2" accel="3.0" decel="4.5" guiShape="passenger/sedan" carFollowModel="IDMM" color="0.8,0.8,0.8" speedDev="0.1" length="5.0" maxSpeed="50" maxSpeedLat="0.9" minGap="1" minGapLat="0.6" sigma="0.0" speedFactor="1" tau="0.1" width="1.79" />
+</routes>
