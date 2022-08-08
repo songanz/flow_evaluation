@@ -25,9 +25,9 @@ if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car_small/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env/config/sumo_CA_car_small/fringe100.rou.xml")
         }
     )
 
