@@ -144,7 +144,7 @@ class Experiment:
                 rl_id = self.env.k.vehicle.get_rl_ids()
                 t0 = time.time()
                 if rl_id:
-                    state, reward, done, _ = self.env.step(rl_actions(tr.from_numpy(state)))
+                    state, reward, done, _ = self.env.step(rl_actions(tr.from_numpy(state))[0])
                 else:
                     state, reward, done, _ = self.env.step(None)
                 t1 = time.time()

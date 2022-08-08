@@ -1,6 +1,9 @@
 import os
 from ray.tune.registry import register_env
 import time
+import sys
+stable_baselines3_path = os.path.join(os.getcwd(), "stable-baselines3")
+sys.path.append(stable_baselines3_path)
 
 from flow.core.params import VehicleParams
 from flow.core.params import NetParams
@@ -23,9 +26,9 @@ if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_CA_car/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_CA_car/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_CA_car/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/fringe100.rou.xml")
         }
     )
 

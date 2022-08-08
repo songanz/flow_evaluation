@@ -1,6 +1,8 @@
 import os
 from ray.tune.registry import register_env
-import time
+import sys
+stable_baselines3_path = os.path.join(os.getcwd(), "stable-baselines3")
+sys.path.append(stable_baselines3_path)
 
 from flow.core.params import VehicleParams
 from flow.core.params import NetParams
@@ -10,7 +12,7 @@ from flow.core.params import SumoParams
 from flow.networks import Network
 from flow.utils.registry import make_create_env
 
-from stable_baselines3 import *
+import stable_baselines3
 
 from palo_alto_sumo_env import PaloAltoSumo
 from evaluation import Experiment
@@ -20,9 +22,9 @@ if __name__ == "__main__":
     """ Setup flow parameters """
     net_params = NetParams(
         template={
-            "net": os.path.join(os.getcwd(), "sumo_CA_car/sID_0.net.xml"),
-            "vtype": os.path.join(os.getcwd(), "sumo_CA_car/dist_config.xml"),
-            "rou": os.path.join(os.getcwd(), "sumo_CA_car/fringe100.rou.xml")
+            "net": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/sID_0.net.xml"),
+            "vtype": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/dist_config.xml"),
+            "rou": os.path.join(os.getcwd(), "sumo_env_config/sumo_CA_car/fringe100.rou.xml")
         }
     )
 
@@ -52,7 +54,9 @@ if __name__ == "__main__":
     register_env(gym_name, create_env)
     env = create_env()
 
-    model = SAC("MlpPolicy", env, verbose=1)
+    algo_name = "SAC"
+    model_ = getattr(stable_baselines3, algo_name)
+    model = model_("MlpPolicy", env, verbose=1)
     model_path = '/home/songanz/flow_evaluation/log/stable_baseline_3/SAC/2022-08-02_21-21-00/model/best_model'
     model.load(model_path)
 
@@ -60,9 +64,8 @@ if __name__ == "__main__":
     exp = Experiment(flow_params)
 
     # setup rl policy
-    rl_actions = model.next_action
+    rl_actions = model.predict
 
     # run the sumo simulation
     info_dict = exp.run(1, rl_actions=rl_actions)
     print(info_dict)
-    
