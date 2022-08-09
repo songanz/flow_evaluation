@@ -104,6 +104,6 @@ if __name__ == "__main__":
     eval_path = os.path.join(base_folder, 'eval/')
     eval_file_path = os.path.join(eval_path, 'eval.json')
     os.makedirs(eval_path, exist_ok=True)
-    json_f = json.dumps(dict)
+    json_f = json.dumps(info_dict)
     with open(eval_file_path, 'w') as f:
         f.write(json_f)
