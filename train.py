@@ -5,6 +5,8 @@ import sys
 stable_baselines3_path = os.path.join(os.getcwd(), "stable-baselines3")
 sys.path.append(stable_baselines3_path)
 
+import gym
+
 from flow.core.params import VehicleParams
 from flow.core.params import NetParams
 from flow.core.params import InitialConfig
@@ -20,6 +22,7 @@ from sumo_env.palo_alto_sumo_att_env import PaloAltoSumoAtt
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList, EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.monitor import Monitor
 from utils.parser import train_parser
 
 
@@ -29,8 +32,10 @@ if __name__ == "__main__":
 
     env_dir = args.env
     warmup_steps = args.warmup_steps
+    horizon = args.horizon
     rl_algo = args.rl_algo
     total_timesteps = args.total_timesteps
+    saved_freq = args.saved_freq
     eval_freq = args.eval_freq
     log = args.log
 
@@ -68,14 +73,14 @@ if __name__ == "__main__":
     )
 
     # number of time steps
-    flow_params['env'].horizon = int(1e8)
+    flow_params['env'].horizon = int(horizon)
     """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
     # env = create_env()
     env = DummyVecEnv([lambda: create_env()])
     env = VecCheckNan(env, raise_exception=True)
-
+    env_eval = Monitor(gym.envs.make(gym_name))
     if env_dir == 'palo_alto_with_attacker' and args.ego_model_path != '':
         """ Setup ego vehicle """
         ego_veh_model_ = getattr(stable_baselines3, args.ego_rl_algo)
@@ -101,12 +106,12 @@ if __name__ == "__main__":
     model.set_logger(logger)
 
     # setup callback
-    checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=model_path,
+    checkpoint_callback = CheckpointCallback(save_freq=saved_freq, save_path=model_path,
                                              name_prefix='rl_model')
-    eval_callback = EvalCallback(env, best_model_save_path=model_path, log_path=eval_path,
-                                 n_eval_episodes=5, eval_freq=50)
+    eval_callback = EvalCallback(env_eval, best_model_save_path=model_path, log_path=eval_path,
+                                 n_eval_episodes=5, eval_freq=eval_freq)
     callback = CallbackList([checkpoint_callback, eval_callback])
 
     # Start training
-    model.learn(total_timesteps=int(1e7), callback=callback)
+    model.learn(total_timesteps=int(total_timesteps), callback=callback)
 
