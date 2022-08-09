@@ -14,3 +14,12 @@ def train_parser():
                         default=50)
     parser.add_argument('-l', '--log', type=str, help='log dir for checkpoints and evaluation results',
                         default='./log')
+    parser.add_argument('--ego_rl_algo', type=str, help='For attacker env, load the ego vehicle policy. '
+                                                        'Only support options from stable_baselines3',
+                        default='SAC')
+    parser.add_argument('--ego_model_path', type=str, help='For attacker env, load the ego vehicle policy. '
+                                                           'Ego vehicle saved model path',
+                        default='')
+
+
+    return parser
