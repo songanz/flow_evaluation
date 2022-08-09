@@ -38,6 +38,8 @@ class PaloAltoSumoAtt(PaloAltoSumo):
                  scenario=None):
         super().__init__(env_params, sim_params, network, simulator, scenario)
         self.ego_vehicle = None
+        self.ego_veh_model_path = None
+        self.ego_veh_model = None
         self.ego_vehicle_id = "Agent"
         self.agent_id = "Attacker"
 
@@ -47,7 +49,9 @@ class PaloAltoSumoAtt(PaloAltoSumo):
         return Box(low=-float("inf"), high=float("inf"), shape=(23,), dtype=np.float32)
 
     def load_ego_vehicle(self, ego_veh_model_path, ego_veh_model):
-        self.ego_vehicle = ego_veh_model.load(ego_veh_model_path)
+        self.ego_veh_model_path = ego_veh_model_path
+        self.ego_veh_model = ego_veh_model
+        self.ego_vehicle = self.ego_veh_model.load(self.ego_veh_model_path)
 
     def step(self, rl_actions):
         crash = False
@@ -355,8 +359,8 @@ class PaloAltoSumoAtt(PaloAltoSumo):
             ego_speed = self.k.vehicle.get_speed("Agent")
             rel_x = self.k.vehicle.get_2d_position("Attacker")[0] - self.k.vehicle.get_2d_position("Agent")[0]
             rel_y = self.k.vehicle.get_2d_position("Attacker")[1] - self.k.vehicle.get_2d_position("Agent")[1]
-            actions = self.ego_vehicle.next_action(self.get_ego_state())
-            state = [ego_speed, rel_x, rel_y] + actions + attacker_state
+            actions, _ = self.ego_vehicle.predict(self.get_ego_state())
+            state = [ego_speed, rel_x, rel_y] + list(actions) + attacker_state
             return state
         else:
             return None

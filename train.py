@@ -84,7 +84,7 @@ if __name__ == "__main__":
         ego_veh_model_ = getattr(stable_baselines3, args.ego_rl_algo)
         ego_veh_model = ego_veh_model_("MlpPolicy", env, verbose=1)
         ego_veh_model_path = args.ego_model_path
-        env.load_ego_vehicle(ego_veh_model, ego_veh_model_path)
+        env.load_ego_vehicle(ego_veh_model_path, ego_veh_model)
     elif env_dir == 'palo_alto_with_attacker' and args.ego_model_path == '':
         print("Need trained ego vehicle model")
         sys.exit()

@@ -57,7 +57,7 @@ class Experiment:
         the environment object the simulator will run
     """
 
-    def __init__(self, flow_params, custom_callables=None):
+    def __init__(self, flow_params, custom_callables=None, env=None):
         """Instantiate the Experiment class.
 
         Parameters
@@ -76,7 +76,10 @@ class Experiment:
         create_env, _ = make_create_env(flow_params)
 
         # Create the environment.
-        self.env = create_env()
+        if env is not None:
+            self.env = env
+        else:
+            self.env = create_env()  # todo not working for attacker env since it needs load ego vehicle
 
         logging.info(" Starting experiment {} at {}".format(
             self.env.network.name, str(datetime.utcnow())))
