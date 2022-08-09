@@ -84,6 +84,7 @@ if __name__ == "__main__":
         env.load_ego_vehicle(ego_veh_model, ego_veh_model_path)
     elif env_dir == 'palo_alto_with_attacker' and args.ego_model_path == '':
         print("Need trained ego vehicle model")
+        sys.exit()
 
     """ Setup model """
     model_ = getattr(stable_baselines3, rl_algo)
