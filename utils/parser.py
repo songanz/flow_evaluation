@@ -4,7 +4,7 @@ import argparse
 def train_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--env', type=str, help='sumo config folder name in sumo_env/config',
-                        default='palo_alto_small')
+                        default='palo_alto_with_attacker')
     parser.add_argument('--warmup_steps', type=int, help='sumo environment warmup steps', default=15)
     parser.add_argument('-r', '--rl_algo', type=str, help='Only support options from stable_baselines3',
                         default='SAC')

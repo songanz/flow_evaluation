@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     sim_params = SumoParams(render=False, no_step_log=False, sim_step=1, restart_instance=True)
 
-    if env_dir == 'palo_alto_with_attaker':
+    if env_dir == 'palo_alto_with_attacker':
         env_name = PaloAltoSumoAtt
     else:
         env_name = PaloAltoSumo
@@ -76,13 +76,13 @@ if __name__ == "__main__":
     env = DummyVecEnv([lambda: create_env()])
     env = VecCheckNan(env, raise_exception=True)
 
-    if env_dir == 'palo_alto_with_attaker' and args.ego_model_path is not '':
+    if env_dir == 'palo_alto_with_attacker' and args.ego_model_path != '':
         """ Setup ego vehicle """
         ego_veh_model_ = getattr(stable_baselines3, args.ego_rl_algo)
         ego_veh_model = ego_veh_model_("MlpPolicy", env, verbose=1)
         ego_veh_model_path = args.ego_model_path
         env.load_ego_vehicle(ego_veh_model, ego_veh_model_path)
-    elif env_dir == 'palo_alto_with_attaker' and args.ego_model_path is '':
+    elif env_dir == 'palo_alto_with_attacker' and args.ego_model_path == '':
         print("Need trained ego vehicle model")
 
     """ Setup model """

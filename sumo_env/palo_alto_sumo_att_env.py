@@ -3,7 +3,7 @@ import random
 from copy import deepcopy
 
 from gym.spaces.box import Box
-from palo_alto_sumo_env import PaloAltoSumo
+from .palo_alto_sumo_env import PaloAltoSumo
 
 
 class PaloAltoSumoAtt(PaloAltoSumo):
