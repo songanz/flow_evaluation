@@ -77,9 +77,7 @@ if __name__ == "__main__":
     """ Register as gym env and create env """
     create_env, gym_name = make_create_env(params=flow_params, version=0)
     register_env(gym_name, create_env)
-    # env = create_env()
-    env = DummyVecEnv([lambda: create_env()])
-    env = VecCheckNan(env, raise_exception=True)
+    env = create_env()
     env_eval = Monitor(gym.envs.make(gym_name))
     if env_dir == 'palo_alto_with_attacker' and args.ego_model_path != '':
         """ Setup ego vehicle """
