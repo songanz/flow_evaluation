@@ -45,6 +45,13 @@ def load_parser():
     parser.add_argument('--ego_model_path', type=str, help='for attacker env, load the ego vehicle policy. '
                                                            'ego vehicle saved model path',
                         default='')
-    parser.add_argument('--render', action='store_true')
+    parser.add_argument('--render', action='store_true', default=True)
 
+    return parser
+
+
+def plot_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--eval_paths', type=str, help='evaluations.npz files absolut path', nargs='+',
+                        default=[])
     return parser
