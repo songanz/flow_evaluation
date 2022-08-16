@@ -1,5 +1,5 @@
-# Install docker follow until step 4
-https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04 
+## Install docker follow until step 4
+[Tutorial](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04) 
 
 ## Setup docker
 In your home directory, copy and paste the `flow_setup`
