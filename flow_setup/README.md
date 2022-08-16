@@ -22,7 +22,7 @@ export PATH=$SUMO_BIN:$PATH
 conda activate flow
 ```
 Then close the vi 
-## start the docker 
+## Start the docker 
 ```bash
 cd ~/flow_setup/scripts
 ./docker_vnc_na.sh -p 44 -d ~/docker_home_flow/ -i flow:1.0 -g 1920x1080
