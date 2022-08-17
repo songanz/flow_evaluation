@@ -5,6 +5,11 @@ This is a repo for traning and evaluting the discretionary and mandatory lane ch
 Please refer to [README.md](flow_setup/README.md) in the `flow_setup` folder for setting up the docker and VNC viewer
 
 ## Environments
+1. palo_alto
+![](img/palo_alto.png)
+2. palo_alto_small
+![](img/palo_alto_small.png)
+- [ ] palo_alto_with_attacker: Same as palo_alto, but have an attacker
 
 ## Train a policy
 ```bash
