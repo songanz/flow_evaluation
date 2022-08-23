@@ -27,6 +27,7 @@ The trained NN will be stored in the `log/` folder
 ```bash
 python3 plot.py --eval_paths <evaluations.npz file abusolute path>
 ```
+You can input multiple `.npz` files
 
 ## Evaluation
 ```bash
@@ -34,9 +35,20 @@ python3 load_trained_policy.py  -e <env config folder name> -r <rl algo name> --
 ```
 For other argument options, please refer to `load_parser()` in [parser.py](utils/parser.py).
 
-It will save the animation as pngs in your log folder. Please set the log path in the env python script. 
+## Generate animation
+During training, the sumo `fcg-output.xml` will be saved in your log directory. You can use `animation.py` to 
+generate the animation.
+```bash
+python3 animation.py -e <env config folder name> --fcd_path <fcd-output.xml file absolute path>
+```
+It will generate:
+![](img/animation.gif)
+
+During evaluation, it will save the animation as pngs in your log directory. 
 
 To generate `.gif` from images, you can use:
 ```bash
 ffmpeg -pattern_type glob -framerate 8 -i "timestep_*.png" sim.gif
 ```
+Then you will have sumo-style animation:
+![](img/sim.gif)

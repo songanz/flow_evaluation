@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.parser import plot_parse
+from utils.parser import plot_parser
 
 
 if __name__ == '__main__':
-    parser = plot_parse()
+    parser = plot_parser()
     args = parser.parse_args()
     fig, ax = plt.subplots()
     x = np.arange(0, 5, 1)

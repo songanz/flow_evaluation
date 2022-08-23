@@ -50,8 +50,17 @@ def load_parser():
     return parser
 
 
-def plot_parse():
+def plot_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--eval_paths', type=str, help='evaluations.npz files absolut path', nargs='+',
+    parser.add_argument('--eval_paths', type=str, help='evaluations.npz files absolute path', nargs='+',
                         default=[])
+    return parser
+
+
+def animation_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--env', type=str, help='sumo config folder name in sumo_env/config',
+                        default='palo_alto_small')
+    parser.add_argument('--fcd_path', type=str, help='fcd-output.xml file absolute path', nargs='+',
+                        default='')
     return parser

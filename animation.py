@@ -1,14 +1,19 @@
 import os
-import sys
+from utils.parser import animation_parser
 
 import SumoNetVis
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 if __name__ == '__main__':
-    net_path = os.path.join(os.getcwd(), "sumo_env/config/", 'palo_alto_small', "sID_0.net.xml")
+    parser = animation_parser()
+    args = parser.parse_args()
+    env_dir = args.env
+    fcd_path = args.fcd_path
+
+    net_path = os.path.join(os.getcwd(), "sumo_env/config/", env_dir, "sID_0.net.xml")
     net = SumoNetVis.Net(net_path)
-    trajectories = SumoNetVis.Trajectories('/home/songanz/flow_evaluation/log/stable_baseline_3/palo_alto_small/SAC/eval/emission/2022-08-23_11-40-19/fcd-output.xml')
+    trajectories = SumoNetVis.Trajectories(fcd_path)
 
     fig, ax = plt.subplots()
     ax.set_xticklabels([])
@@ -23,5 +28,11 @@ if __name__ == '__main__':
 
     ani = animation.FuncAnimation(fig, trajectories.plot_points, frames=trajectories.timestep_range(), repeat=False,
                                   interval=300 * trajectories.timestep, fargs=(net, ax,), blit=True)
+    # to show
     # plt.show()
-    ani.save('anim.mp4', writer="ffmpeg")
+
+    # to save as mp4
+    # ani.save('animation.mp4', writer="ffmpeg")
+
+    # to save as gif
+    ani.save('animation.gif', writer='imagemagick')
