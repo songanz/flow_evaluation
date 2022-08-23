@@ -32,4 +32,11 @@ python3 plot.py --eval_paths <evaluations.npz file abusolute path>
 ```bash
 python3 load_trained_policy.py  -e <env config folder name> -r <rl algo name> --model_path <trained model path>
 ```
-For other argument options, please refer to `load_parser()` in [parser.py](utils/parser.py)
+For other argument options, please refer to `load_parser()` in [parser.py](utils/parser.py).
+
+It will save the animation as pngs in your log folder. Please set the log path in the env python script. 
+
+To generate `.gif` from images, you can use:
+```bash
+ffmpeg -pattern_type glob -framerate 8 -i "timestep_*.png" sim.gif
+```
