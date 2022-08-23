@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import time
+import os
 from copy import deepcopy
 
 from flow.envs.base import Env
@@ -62,6 +64,18 @@ class PaloAltoSumo(Env):
         }
         self.HARDBRAKE = -6
         self.SPEEDGAP = 16
+        self.anim_dir = os.path.join('/home/songanz/flow_evaluation/log/anim/SAC', time.strftime('%Y-%m-%d_%H-%M-%S'))
+        os.makedirs(self.anim_dir, exist_ok=True)
+
+    @property
+    def observation_space(self):
+        """See parent class."""
+        return Box(low=-float("inf"), high=float("inf"), shape=(19,), dtype=np.float32)
+
+    @property
+    def action_space(self):
+        """See parent class."""
+        return Box(low=-1, high=1, shape=(2,), dtype=np.float32)
 
     def step(self, rl_actions):
         crash = False
@@ -113,7 +127,7 @@ class PaloAltoSumo(Env):
             self.k.simulation.simulation_step()
 
             # store new observations in the vehicles and traffic lights class
-            self.k.update(reset=False)
+            self.k.update(reset=False, anim_dir=self.anim_dir)
 
             # update the colors of vehicles
             if self.sim_params.render:
@@ -191,16 +205,6 @@ class PaloAltoSumo(Env):
             reward = self.compute_reward(rl_actions, fail=crash, next_s=next_observation, s=obs)
 
         return next_observation, reward, done, infos
-
-    @property
-    def action_space(self):
-        """See parent class."""
-        return Box(low=-1, high=1, shape=(2,), dtype=np.float32)
-
-    @property
-    def observation_space(self):
-        """See parent class."""
-        return Box(low=-float("inf"), high=float("inf"), shape=(19,), dtype=np.float32)
 
     def apply_rl_actions(self, rl_actions=None):
         # return None

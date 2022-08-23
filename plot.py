@@ -24,8 +24,8 @@ if __name__ == '__main__':
         plot_l = ax.plot(x, y, label=algo_name)
         ax.fill_between(x, (y - ci), (y + ci), alpha=.3)
 
-    ax.set_xlim(15000, 20000)
     ax.plot(x, np.zeros(x.shape), '--')
+    # ax.set_xlim(250000, 350000)
     ax.set_ylim(-50, 20)
     ax.legend()
     ax.set_xlabel('Total Timesteps')

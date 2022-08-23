@@ -13,7 +13,6 @@ import subprocess
 import signal
 import csv
 
-
 # Number of retries on restarting SUMO before giving up
 RETRIES_ON_ERROR = 10
 
@@ -91,7 +90,7 @@ class TraCISimulation(KernelSimulation):
         """See parent class."""
         self.kernel_api.simulationStep()
 
-    def update(self, reset):
+    def update(self, reset, anim_dir=None):
         """See parent class."""
         if reset:
             self.time = 0
@@ -100,6 +99,21 @@ class TraCISimulation(KernelSimulation):
 
         # kernel_api.gui
         # kernel_api.simulation
+        if 'Agent' in self.master_kernel.vehicle.get_ids():
+            if 'Attacker' in self.master_kernel.vehicle.get_ids():
+                agent_id = 'Attacker'
+            else:
+                agent_id = 'Agent'
+
+            try:
+                self.kernel_api.gui.trackVehicle('View #0', agent_id)
+                self.kernel_api.gui.setZoom('View #0', 1500)
+                if anim_dir is not None:
+                    import time
+                    file_name = os.path.join(anim_dir, 'timestep_' + str(self.time) + '.png')
+                    self.kernel_api.gui.screenshot('View #0', file_name)
+            except:
+                pass
 
         # Collect the additional data to store in the emission file.
         if self.emission_path is not None:

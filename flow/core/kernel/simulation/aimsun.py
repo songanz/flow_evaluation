@@ -74,7 +74,7 @@ class AimsunKernelSimulation(KernelSimulation):
         """See parent class."""
         self.kernel_api.simulation_step()
 
-    def update(self, reset):
+    def update(self, reset, anmi_dir=None):
         """See parent class.
 
         No update is needed in this case.
