@@ -22,7 +22,7 @@ class Trajectory:
     def __init__(self, id, type, time=None, x=None, y=None, speed=None, angle=None, lane=None, colors=None, params=None):
         self.id = id
         self.type = type
-        self.point_plot_kwargs = {"color": "blue", "ms": 5, "markeredgecolor": "black", "zorder": 200}
+        self.point_plot_kwargs = {"color": "blue", "ms": 6, "zorder": 200}
         self.time = time if time is not None else []
         self.x = x if x is not None else []
         self.y = y if y is not None else []
@@ -195,6 +195,7 @@ class Trajectory:
                     "angle": None,
                     "lane": None,
                     "color": None,
+                    "id": None,
                     **{key: None for key in self.params}}
         else:
             return {"x": self.x[idx],
@@ -203,6 +204,7 @@ class Trajectory:
                     "angle": self.angle[idx],
                     "lane": self.lane[idx],
                     "color": self.colors[idx],
+                    "id": self.id,
                     **{key: self.params[key][idx] for key in self.params}}
 
     def plot(self, ax=None, start_time=0, end_time=np.inf, zoom_to_extents=False, **kwargs):
@@ -314,9 +316,11 @@ class Trajectories:
         root = ET.parse(file).getroot()
         trajectories = dict()
         for timestep in root:
+            # start ploting after the Agent joined
             vehicle_list = [x.attrib['id'] for x in timestep.findall('.//vehicle')]
             if 'Agent' not in vehicle_list:
                 continue
+
             time = float(timestep.attrib["time"])
             if self.timestep is None and self.start is not None:
                 self.timestep = time - self.start
@@ -331,7 +335,7 @@ class Trajectories:
                     elif vehID == 'Attacker':
                         color = '#ff0000'
                     else:
-                        color = '#0040ff'
+                        color = '#FFFF00'
                     type = veh.attrib.get("type", "")
                     if vehID not in trajectories:
                         trajectories[vehID] = Trajectory(vehID, type)
@@ -388,11 +392,12 @@ class Trajectories:
             artists.append(artist)
         return artists
 
-    def plot_points(self, time, ax=None, animate_color=False):
+    def plot_points(self, time, net=None, ax=None, animate_color=True):
         """
         Plots the position of each vehicle at the specified time as a point.
         The style for each point is controlled by each Trajectory's point_plot_kwargs attribute.
 
+        :param net: network to plot points on
         :param time: simulation time for which to plot vehicle positions.
         :param ax: matplotlib Axes object. Defaults to current axes.
         :param animate_color: If True, the color of the marker will be animated using the Trajectory's color values.
@@ -403,9 +408,14 @@ class Trajectories:
         """
         if ax is None:
             ax = plt.gca()
+        collections = net.plot(ax=ax)
         for traj in self.trajectories:
             values = traj._get_values_at_time(time)
             x, y = values["x"], values["y"]
+            if values["id"] == 'Agent':
+                x_agent, y_agent = x, y
+                ax.set_xlim(x_agent - 100, x_agent + 100)
+                ax.set_ylim(y_agent - 100, y_agent + 100)
             angle = values["angle"]
             color = values["color"]
             if x is None or y is None:
@@ -426,7 +436,7 @@ class Trajectories:
                 self.graphics[traj].set_marker((3, 0, angle))
                 if animate_color:
                     self.graphics[traj].set_color(traj.point_plot_kwargs["color"])
-        return tuple(self.graphics[traj] for traj in self.graphics)
+        return tuple(self.graphics[traj] for traj in self.graphics) + tuple(collections)
 
 
 if __name__ == "__main__":
