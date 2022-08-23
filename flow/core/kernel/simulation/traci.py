@@ -250,8 +250,6 @@ class TraCISimulation(KernelSimulation):
                 # for replay
                 sumo_call.append("--fcd-output")
                 sumo_call.append(os.path.join(self.emission_path, 'fcd-output.xml'))
-                sumo_call.append("--collision-output")
-                sumo_call.append(os.path.join(self.emission_path, 'collision.xml'))
 
                 logging.info(" Starting SUMO on port " + str(port))
                 logging.debug(" Cfg file: " + str(network.cfg))
