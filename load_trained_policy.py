@@ -35,6 +35,14 @@ if __name__ == "__main__":
     log = args.log
     render = args.render
 
+    """ Setup log dirs """
+    base_folder = os.path.join(log, "stable_baseline_3/", env_dir, rl_algo)
+    eval_path = os.path.join(base_folder, 'eval/')
+    eval_file_path = os.path.join(eval_path, 'eval.json')
+    os.makedirs(eval_path, exist_ok=True)
+    emission_path = os.path.join(eval_path, 'emission/')
+    os.makedirs(emission_path, exist_ok=True)
+
     """ Setup flow parameters """
     net_params = NetParams(
         template={
@@ -49,7 +57,8 @@ if __name__ == "__main__":
     env_params = EnvParams(warmup_steps=warmup_steps, clip_actions=False)
     initial_config = InitialConfig()
 
-    sim_params = SumoParams(render=render, no_step_log=True, sim_step=1, restart_instance=True)
+    sim_params = SumoParams(render=render, no_step_log=True, sim_step=1, restart_instance=True,
+                            emission_path=emission_path)
 
     if env_dir == 'palo_alto_with_attacker':
         env_name = PaloAltoSumoAtt
@@ -100,10 +109,6 @@ if __name__ == "__main__":
     print(info_dict)
 
     # save info dict
-    base_folder = os.path.join(log, "stable_baseline_3/", env_dir, rl_algo)
-    eval_path = os.path.join(base_folder, 'eval/')
-    eval_file_path = os.path.join(eval_path, 'eval.json')
-    os.makedirs(eval_path, exist_ok=True)
     json_f = json.dumps(info_dict)
     with open(eval_file_path, 'w') as f:
         f.write(json_f)

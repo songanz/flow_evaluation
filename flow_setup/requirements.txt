@@ -32,3 +32,4 @@ tensorboardX
 ray
 dm_tree
 stable_baselines
+Shapely

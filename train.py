@@ -59,8 +59,8 @@ class CheckpointCallback(BaseCallback):
             path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps")
             self.model.save(path)
             try:
-                self.model.save_replay_buffer(os.path.join(self.save_path,'replay_buffer.pkl'))
-                print('Off policy')
+                self.model.save_replay_buffer(os.path.join(self.save_path, 'replay_buffer.pkl'))
+                print('Off policy, saving replay buffer')
             except:
                 print('On policy')
             if self.verbose > 1:
@@ -81,6 +81,16 @@ if __name__ == "__main__":
     eval_freq = args.eval_freq
     log = args.log
 
+    """ Setup log dirs """
+    base_folder = os.path.join(log, "stable_baseline_3/", env_dir, rl_algo)
+    log_dir = os.path.join(base_folder, time.strftime('%Y-%m-%d_%H-%M-%S'))
+    emission_path = os.path.join(log_dir, 'emission/')
+    os.makedirs(emission_path, exist_ok=True)
+    model_path = os.path.join(log_dir, 'model/')
+    os.makedirs(model_path, exist_ok=True)
+    eval_path = os.path.join(log_dir, 'eval/')
+    os.makedirs(eval_path, exist_ok=True)
+
     """ Setup flow parameters """
     net_params = NetParams(
         template={
@@ -95,7 +105,8 @@ if __name__ == "__main__":
     env_params = EnvParams(warmup_steps=warmup_steps, clip_actions=False)
     initial_config = InitialConfig()
 
-    sim_params = SumoParams(render=False, no_step_log=False, sim_step=1, restart_instance=True)
+    sim_params = SumoParams(render=False, no_step_log=False, sim_step=1, restart_instance=True,
+                            emission_path=emission_path)
 
     if env_dir == 'palo_alto_with_attacker':
         env_name = PaloAltoSumoAtt
@@ -134,13 +145,6 @@ if __name__ == "__main__":
     """ Setup model """
     model_ = getattr(stable_baselines3, rl_algo)
     model = model_("MlpPolicy", env, verbose=1)
-
-    base_folder = os.path.join(log, "stable_baseline_3/", env_dir, rl_algo)
-    log_dir = os.path.join(base_folder, time.strftime('%Y-%m-%d_%H-%M-%S'))
-    model_path = os.path.join(log_dir, 'model/')
-    os.makedirs(model_path, exist_ok=True)
-    eval_path = os.path.join(log_dir, 'eval/')
-    os.makedirs(eval_path, exist_ok=True)
 
     logger = configure(eval_path, ['stdout', 'csv', 'tensorboard'])
     model.set_logger(logger)

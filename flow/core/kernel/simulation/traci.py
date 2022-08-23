@@ -90,7 +90,7 @@ class TraCISimulation(KernelSimulation):
         """See parent class."""
         self.kernel_api.simulationStep()
 
-    def update(self, reset, anim_dir=None):
+    def update(self, reset):
         """See parent class."""
         if reset:
             self.time = 0
@@ -108,9 +108,9 @@ class TraCISimulation(KernelSimulation):
             try:
                 self.kernel_api.gui.trackVehicle('View #0', agent_id)
                 self.kernel_api.gui.setZoom('View #0', 1500)
-                if anim_dir is not None:
+                if self.emission_path is not None:
                     import time
-                    file_name = os.path.join(anim_dir, 'timestep_' + str(self.time) + '.png')
+                    file_name = os.path.join(self.emission_path, 'timestep_' + str(self.time) + '.png')
                     self.kernel_api.gui.screenshot('View #0', file_name)
             except:
                 pass
@@ -188,8 +188,8 @@ class TraCISimulation(KernelSimulation):
         self.sim_step = sim_params.sim_step
 
         # Update the emission path term.
-        self.emission_path = sim_params.emission_path
-        if self.emission_path is not None:
+        if sim_params.emission_path is not None:
+            self.emission_path = os.path.join(sim_params.emission_path, time.strftime('%Y-%m-%d_%H-%M-%S'))
             ensure_dir(self.emission_path)
 
         error = None
@@ -248,10 +248,10 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("2")
 
                 # for replay
-                # sumo_call.append("--save-state.period")
-                # sumo_call.append("1")
-                # sumo_call.append("--save-state.prefix")
-                # sumo_call.append("test")
+                sumo_call.append("--fcd-output")
+                sumo_call.append(os.path.join(self.emission_path, 'fcd-output.xml'))
+                sumo_call.append("--collision-output")
+                sumo_call.append(os.path.join(self.emission_path, 'collision.xml'))
 
                 logging.info(" Starting SUMO on port " + str(port))
                 logging.debug(" Cfg file: " + str(network.cfg))

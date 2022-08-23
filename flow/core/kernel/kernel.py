@@ -84,7 +84,7 @@ class Kernel(object):
         self.vehicle.pass_api(kernel_api)
         self.traffic_light.pass_api(kernel_api)
 
-    def update(self, reset, anim_dir=None):
+    def update(self, reset):
         """Update the kernel subclasses after a simulation step.
 
         This is meant to support optimizations in the performance of some
@@ -97,13 +97,11 @@ class Kernel(object):
         reset : bool
             specifies whether the simulator was reset in the last simulation
             step
-        anim_dir: str
-            directory for storing animation screenshots
         """
         self.vehicle.update(reset)
         self.traffic_light.update(reset)
         self.network.update(reset)
-        self.simulation.update(reset, anim_dir=anim_dir)
+        self.simulation.update(reset)
 
     def close(self):
         """Terminate all components within the simulation and network."""

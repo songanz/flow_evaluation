@@ -64,8 +64,6 @@ class PaloAltoSumo(Env):
         }
         self.HARDBRAKE = -6
         self.SPEEDGAP = 16
-        self.anim_dir = os.path.join('/home/songanz/flow_evaluation/log/anim/SAC', time.strftime('%Y-%m-%d_%H-%M-%S'))
-        os.makedirs(self.anim_dir, exist_ok=True)
 
     @property
     def observation_space(self):
@@ -127,7 +125,7 @@ class PaloAltoSumo(Env):
             self.k.simulation.simulation_step()
 
             # store new observations in the vehicles and traffic lights class
-            self.k.update(reset=False, anim_dir=self.anim_dir)
+            self.k.update(reset=False)
 
             # update the colors of vehicles
             if self.sim_params.render:
