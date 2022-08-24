@@ -47,8 +47,12 @@ It will generate:
 During evaluation, it will save the animation as pngs in your log directory. 
 
 To generate `.gif` from images, you can use:
-```bash
+```commandline
 ffmpeg -pattern_type glob -framerate 8 -i "timestep_*.png" sim.gif
+```
+To generate `.mp4` from images:
+```commandline
+ffmpeg -pattern_type glob -framerate 8 -i "timestep_*.png" -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -pix_fmt yuv420p -r 24 -y -an sim.mp4 
 ```
 Then you will have sumo-style animation:
 ![](img/sim.gif)
