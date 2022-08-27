@@ -63,6 +63,7 @@ class TraCISimulation(KernelSimulation):
         self.sumo_proc = None
         self.sim_step = None
         self.emission_path = None
+        self.screenshot = False
         self.time = 0
         self.stored_data = dict()
 
@@ -99,7 +100,7 @@ class TraCISimulation(KernelSimulation):
 
         # kernel_api.gui
         # kernel_api.simulation
-        if 'Agent' in self.master_kernel.vehicle.get_ids():
+        if self.screenshot and 'Agent' in self.master_kernel.vehicle.get_ids():
             if 'Attacker' in self.master_kernel.vehicle.get_ids():
                 agent_id = 'Attacker'
             else:
@@ -139,6 +140,7 @@ class TraCISimulation(KernelSimulation):
                     "relative_position": kv.get_position(veh_id),
                     "x": position[0],
                     "y": position[1],
+                    "angle": kv.get_orientation(veh_id),
                     "headway": kv.get_headway(veh_id),
                     "leader_id": kv.get_leader(veh_id),
                     "follower_id": kv.get_follower(veh_id),
@@ -315,6 +317,7 @@ class TraCISimulation(KernelSimulation):
         stored_ids = [
             "x",
             "y",
+            "angle",
             "speed",
             "headway",
             "leader_id",

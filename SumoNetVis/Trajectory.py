@@ -8,6 +8,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 import numpy as np
 import warnings
+import pandas
 
 
 GENERIC_PARAM_MISSING_VALUE = None  # value to assign for timesteps when a generic parameter is missing
@@ -274,6 +275,8 @@ class Trajectories:
         if file is not None:
             if file.endswith("fcd-output.xml"):
                 self.read_from_fcd(file)
+            elif file.endswith("_emission.csv"):
+                self.read_from_csv(file)
             else:
                 raise NotImplementedError("Reading from this type of file not implemented: " + file)
 
@@ -360,6 +363,42 @@ class Trajectories:
                             params = {key: vehChild.attrib[key] for key in vehChild.attrib if key not in ["id", "type", "x", "y", "lane", "speed", "angle"]}
                             params = {"_parent_vehicle": vehID, **params}
                             trajectories[objID]._append_point(time, x, y, speed, angle, lane, params=params)
+        for vehID in trajectories:
+            self._append(trajectories[vehID])
+
+    def read_from_csv(self, file):
+        trajectories = dict()
+        df = pandas.read_csv(file)
+        df = df.reset_index()
+        self.start = df.loc[df['id'] == 'Agent']['time'].values[0] - 1
+        for index, row in df.iterrows():
+            if row['time'] > self.start:
+                if self.timestep is None and self.start is not None:
+                    self.timestep = row['time'] - self.start
+                if self.start is None:
+                    self.start = row['time']
+                self.end = row['time']
+
+                vehID = row['id']
+                if vehID == 'Agent':
+                    color = '#00FF00'
+                elif vehID == 'Attacker':
+                    color = '#ff0000'
+                else:
+                    color = '#FFFF00'
+                if vehID not in trajectories:
+                    trajectories[vehID] = Trajectory(vehID, type)
+                params = {key: df.keys() for key in list(df.keys().values) if
+                          key not in ["id", "type", "x", "y", "edge_id", "lane_number",  "speed", "angle"]}
+                trajectories[vehID]._append_point(float(row['time']),
+                                                  float(row['x']),
+                                                  float(row['y']),
+                                                  float(row['speed']),
+                                                  float(row['angle'].split(',')[2].split(']')[0]),
+                                                  row['edge_id'] + '_' + str(row['lane_number']),
+                                                  color=color, params=params)
+            else:
+                pass
         for vehID in trajectories:
             self._append(trajectories[vehID])
 

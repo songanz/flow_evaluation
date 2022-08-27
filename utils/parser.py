@@ -61,6 +61,6 @@ def animation_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--env', type=str, help='sumo config folder name in sumo_env/config',
                         default='palo_alto_small')
-    parser.add_argument('--fcd_path', type=str, help='fcd-output.xml file absolute path', nargs='+',
+    parser.add_argument('--log_path', type=str, help='fcd-output.xml or emission.csv file absolute path',
                         default='')
     return parser
