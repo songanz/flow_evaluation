@@ -46,7 +46,7 @@ class PaloAltoSumoAtt(PaloAltoSumo):
     @property
     def observation_space(self):
         """See parent class."""
-        return Box(low=-float("inf"), high=float("inf"), shape=(23,), dtype=np.float32)
+        return Box(low=-float("inf"), high=float("inf"), shape=(24,), dtype=np.float32)
 
     def load_ego_vehicle(self, ego_veh_model_path, ego_veh_model):
         self.ego_veh_model_path = ego_veh_model_path
@@ -67,13 +67,114 @@ class PaloAltoSumoAtt(PaloAltoSumo):
                     self.k.vehicle.apply_lane_change(id_, self.lc_action_map(rl_actions[1]))
                 elif id_ == "Agent":
                     ego_state = self.get_ego_state()
-                    actions = self.ego_vehicle.next_action(ego_state)
+                    actions, _ = self.ego_vehicle.predict(ego_state)
                     self.k.vehicle.apply_acceleration(id_, actions[0])
                     self.k.vehicle.apply_lane_change(id_, self.lc_action_map(actions[1]))
                 else:
                     print("Unknow RL agent: ", id_)
         else:
             return
+
+    def step(self, rl_actions):
+        crash = False
+        obs = np.copy(self.get_state())
+        for _ in range(self.env_params.sims_per_step):
+            self.time_counter += 1
+            self.step_counter += 1
+
+            # perform acceleration actions for controlled human-driven vehicles
+            if len(self.k.vehicle.get_controlled_ids()) > 0:
+                accel = []
+                for veh_id in self.k.vehicle.get_controlled_ids():
+                    action = self.k.vehicle.get_acc_controller(
+                        veh_id).get_action(self)
+                    accel.append(action)
+                self.k.vehicle.apply_acceleration(
+                    self.k.vehicle.get_controlled_ids(), accel)
+
+            # perform lane change actions for controlled human-driven vehicles
+            if len(self.k.vehicle.get_controlled_lc_ids()) > 0:
+                direction = []
+                for veh_id in self.k.vehicle.get_controlled_lc_ids():
+                    target_lane = self.k.vehicle.get_lane_changing_controller(
+                        veh_id).get_action(self)
+                    direction.append(target_lane)
+                self.k.vehicle.apply_lane_change(
+                    self.k.vehicle.get_controlled_lc_ids(),
+                    direction=direction)
+
+            # perform (optionally) routing actions for all vehicles in the
+            # network, including RL and SUMO-controlled vehicles
+            routing_ids = []
+            routing_actions = []
+            for veh_id in self.k.vehicle.get_ids():
+                if self.k.vehicle.get_routing_controller(veh_id) \
+                        is not None:
+                    routing_ids.append(veh_id)
+                    route_contr = self.k.vehicle.get_routing_controller(
+                        veh_id)
+                    routing_actions.append(route_contr.choose_route(self))
+
+            self.k.vehicle.choose_routes(routing_ids, routing_actions)
+
+            self.apply_rl_actions(rl_actions)
+
+            self.additional_command()
+
+            # advance the simulation in the simulator by one step
+            self.k.simulation.simulation_step()
+
+            # store new observations in the vehicles and traffic lights class
+            self.k.update(reset=False)
+
+            # update the colors of vehicles
+            if self.sim_params.render:
+                self.k.vehicle.update_vehicle_colors()
+
+            # crash: wiil not terminate if other vehicel crash
+            # todo: get crash of the agent and crash of the attacker
+            rl_agents_ids = self.k.vehicle.get_rl_ids()
+            if self.ego_vehicle_id in rl_agents_ids and self.agent_id in rl_agents_ids:
+                if self.k.vehicle.get_crash(self.ego_vehicle_id):
+                    crash = True
+                    print('Agent crashed')
+                    break
+            else:
+                crash = False
+
+            # stop collecting new simulation steps if there is a collision
+            if crash:
+                break
+
+            # render a frame
+            self.render()
+
+        states = self.get_state()
+
+        # collect information of the state of the network based on the
+        # environment class used
+        self.state = np.asarray(states).T
+
+        # collect observation new state associated with action
+        next_observation = np.copy(states)
+
+        # test if the environment should terminate due to a collision or the
+        # time horizon being met
+        done = (self.time_counter >= self.env_params.sims_per_step *
+                (self.env_params.warmup_steps + self.env_params.horizon)
+                or crash)
+
+        # compute the info for each agent
+        infos = {}
+
+        # compute the reward
+        if self.env_params.clip_actions:
+            rl_clipped = self.clip_actions(rl_actions)
+            reward = self.compute_reward(rl_clipped, fail=crash, next_s=next_observation, s=obs)
+        else:
+            reward = self.compute_reward(rl_actions, fail=crash, next_s=next_observation, s=obs)
+
+        return next_observation, reward, done, infos
 
     def compute_reward(self, rl_actions, fail=False, next_s=None, s=None):
         if not next_s.any():
@@ -211,11 +312,11 @@ class PaloAltoSumoAtt(PaloAltoSumo):
         # perform (optional) warm-up steps before training
         for _ in range(self.env_params.warmup_steps):
             observation, _, _, _ = self.step(rl_actions=None)
-        while self.k.vehicle.get_rl_ids() \
-                or "Agent" not in self.k.vehicle.get_rl_ids() \
-                or "Attacker" not in self.k.vehicle.get_rl_ids():
+        while not self.k.vehicle.get_rl_ids() \
+                and ("Agent" not in self.k.vehicle.get_rl_ids()
+                     or "Attacker" not in self.k.vehicle.get_rl_ids()):
             observation, _, _, _ = self.step(rl_actions=None)
-        print("Observation 0 after warm-up", observation[0])
+        print("Observation 0 after warm-up", observation)
 
         # render a frame
         self.render(reset=True)

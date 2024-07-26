@@ -17,6 +17,7 @@ def train_parser():
                         default=50)
     parser.add_argument('-l', '--log', type=str, help='log dir for checkpoints and evaluation results',
                         default='./log')
+    parser.add_argument('--checkpoint_model', type=str, help='checkpoint model for restart the training', default='')
     parser.add_argument('--ego_rl_algo', type=str, help='for attacker env, load the ego vehicle policy. '
                                                         'only support options from stable_baselines3',
                         default='SAC')
@@ -61,6 +62,6 @@ def animation_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--env', type=str, help='sumo config folder name in sumo_env/config',
                         default='palo_alto_small')
-    parser.add_argument('--log_path', type=str, help='fcd-output.xml or emission.csv file absolute path',
+    parser.add_argument('--log_path', type=str, help='*emission.csv file absolute path',
                         default='')
     return parser

@@ -84,8 +84,6 @@ if __name__ == "__main__":
     """ Setup log dirs """
     base_folder = os.path.join(log, "stable_baseline_3/", env_dir, rl_algo)
     log_dir = os.path.join(base_folder, time.strftime('%Y-%m-%d_%H-%M-%S'))
-    emission_path = os.path.join(log_dir, 'emission/')
-    os.makedirs(emission_path, exist_ok=True)
     model_path = os.path.join(log_dir, 'model/')
     os.makedirs(model_path, exist_ok=True)
     eval_path = os.path.join(log_dir, 'eval/')
@@ -106,7 +104,7 @@ if __name__ == "__main__":
     initial_config = InitialConfig()
 
     sim_params = SumoParams(render=False, no_step_log=False, sim_step=1, restart_instance=True,
-                            emission_path=emission_path)
+                            emission_path=None)  # if you want to save the animation: set up the emission path
 
     if env_dir == 'palo_alto_with_attacker':
         env_name = PaloAltoSumoAtt
@@ -145,6 +143,9 @@ if __name__ == "__main__":
     """ Setup model """
     model_ = getattr(stable_baselines3, rl_algo)
     model = model_("MlpPolicy", env, verbose=1)
+
+    if args.checkpoint_model:
+        model.load(args.checkpoint_model)
 
     logger = configure(eval_path, ['stdout', 'csv', 'tensorboard'])
     model.set_logger(logger)
